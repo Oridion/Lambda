@@ -1,0 +1,631 @@
+{
+  "version": "0.1.0",
+  "name": "oridion",
+  "instructions": [
+    {
+      "name": "bang",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "UNIVERSE SECTION",
+        "-------------------------------------------------------------------///",
+        "This is the main initialization function.",
+        "It will create the universe and will only be called one time.",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "universe",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateFee",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "CRANK TIME",
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///",
+        "UPDATE FEE",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "universe",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "cometFee",
+          "type": "u32"
+        },
+        {
+          "name": "hopPlanetFee",
+          "type": "u32"
+        },
+        {
+          "name": "hopStarFee2",
+          "type": "u32"
+        },
+        {
+          "name": "hopStarFee3",
+          "type": "u32"
+        },
+        {
+          "name": "withdrawFee",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "createPlanet",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "CREATE PLANET",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "planet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "universe",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "deletePlanet",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "DELETE PLANET",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "planet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "universe",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "newComet",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///",
+        "COMET SECTION",
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///",
+        "DEPOSIT handles the tracking of user deposit data",
+        "- No transferring of sol here",
+        "- Signed by manager",
+        "-------------------------------------------------------------------///",
+        "CREATE NEW COMET [USER GENERATED]",
+        "Create users COMET to handles initial deposit transaction to galaxy and then to initial planet.",
+        "- Signed by User",
+        "- Deposit (In lamports)",
+        "- Transfer to Galaxy and then to Planet",
+        "- this comes first before creating deposit account.",
+        "Updates planet account only. We then delete account",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "universe",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "planet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "treasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "depositLamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "planetHop",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "HOP COMET TO PLANET",
+        "When this function is called, it will generate a star and transfer the funds",
+        "either from universe to the star, or from star to star.",
+        "it will be connected to",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "from",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "WITHDRAW COMET FUNDS TO FINAL DESTINATION.",
+        "- THIS ONLY HANDLES THE TRANSACTION FROM PLANET TO FINAL USER WALLET.",
+        "- This is just like planet hop except deliver to destination wallet"
+      ],
+      "accounts": [
+        {
+          "name": "from",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "destination",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "withdrawLamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "starHopTwoStart",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///",
+        "STAR HOP SECTION",
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "from",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starTwo",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "starOne",
+          "type": "string"
+        },
+        {
+          "name": "starTwo",
+          "type": "string"
+        },
+        {
+          "name": "deposit",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "starHopTwoEnd",
+      "docs": [
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///",
+        "STAR HOP SECTION",
+        "-------------------------------------------------------------------///",
+        "-------------------------------------------------------------------///"
+      ],
+      "accounts": [
+        {
+          "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starTwo",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "starHopThreeStart",
+      "docs": [
+        "STAR HOP THREE"
+      ],
+      "accounts": [
+        {
+          "name": "from",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starTwo",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starThree",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "starOne",
+          "type": "string"
+        },
+        {
+          "name": "starTwo",
+          "type": "string"
+        },
+        {
+          "name": "starThree",
+          "type": "string"
+        },
+        {
+          "name": "deposit",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "starHopThreeEnd",
+      "accounts": [
+        {
+          "name": "to",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starTwo",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "starThree",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "deposit",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Star",
+      "docs": [
+        "Users creates comet by transferring funds to the universe.",
+        "- funds \"hops\" from universe to stars/planets until final destination wallet.",
+        "- During comet life span, user responsible for \"cranking\" comet to final destination",
+        "- User can track progress / location.",
+        "- Comets will be deleted with no trace after completing their path.",
+        "- One wallet = One comet.",
+        "",
+        "- location string example: [ [location_type]:[id/name]:[lamports],[location_type]:[id/name]:[lamports], etc..   ]",
+        "- location types",
+        "-- 1 = universe",
+        "-- 2 = planet",
+        "-- 3 = star",
+        "- location can be 1 or up to 4",
+        "",
+        "- star name must be 6 chars long.",
+        "- each string location set variable must a certain length."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "manager",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Planet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "pda",
+            "type": "publicKey"
+          },
+          {
+            "name": "created",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "visits",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Universe",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pda",
+            "type": "publicKey"
+          },
+          {
+            "name": "p",
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "st",
+            "type": "i64"
+          },
+          {
+            "name": "up",
+            "type": "i64"
+          },
+          {
+            "name": "bp",
+            "type": "u8"
+          },
+          {
+            "name": "cfe",
+            "type": "u64"
+          },
+          {
+            "name": "hpfe",
+            "type": "u64"
+          },
+          {
+            "name": "hsfe2",
+            "type": "u64"
+          },
+          {
+            "name": "hsfe3",
+            "type": "u64"
+          },
+          {
+            "name": "wfe",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "CometRdmOEError",
+      "msg": "Rdm oe error"
+    },
+    {
+      "code": 6001,
+      "name": "CometRdmBrError",
+      "msg": "Rdm br error"
+    },
+    {
+      "code": 6002,
+      "name": "PlanetDeleteHasFundsError",
+      "msg": "Planet cannot be deleted. Has funds"
+    },
+    {
+      "code": 6003,
+      "name": "CometIdLengthError",
+      "msg": "Comet id length error"
+    },
+    {
+      "code": 6004,
+      "name": "HopErrorFromPlanetNotCorrect",
+      "msg": "From planet is not the same"
+    },
+    {
+      "code": 6005,
+      "name": "HopErrorToAndFromAreSame",
+      "msg": "To and from cannot be the same"
+    },
+    {
+      "code": 6006,
+      "name": "HopErrorStarsMustBeUnique",
+      "msg": "Stars IDs must be unique"
+    },
+    {
+      "code": 6007,
+      "name": "PlanetNotEnoughFundsError",
+      "msg": "Planet does not have enough lamports to cover transaction!"
+    },
+    {
+      "code": 6008,
+      "name": "StarHopCalculationError",
+      "msg": "Star split calculations do not add up!"
+    }
+  ],
+  "metadata": {
+    "address": "6ihF5TkmwWKPJfxDWJoA6f6EuLYqvPKdMbj9ohJ6n7kg"
+  }
+}
