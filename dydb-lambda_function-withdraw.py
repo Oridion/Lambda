@@ -14,6 +14,8 @@ from solana.rpc.async_api import AsyncClient
 from solana.rpc.websocket_api import connect
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
 from anchor.instructions import withdraw
 
 logger = logging.getLogger()
@@ -25,9 +27,12 @@ db = dynamodb.Table("deposits")
 #we should get this from environment variables.
 oridion_program_id = Pubkey.from_string(os.environ['ORD_PROGRAM_ADDRESS'])
 
+#wss url
+wss_url = os.environ['WSS_URL']
+
 #Set Client and async client (devnet_env or mainnet_env)
-http_client = Client(os.environ['DEVNET_ENV'])
-async_client = AsyncClient(os.environ['DEVNET_ENV'])
+http_client = Client(os.environ['MAINNET_ENV'])
+async_client = AsyncClient(os.environ['MAINNET_ENV'])
 
 
 # Pass wallet, hop transaction, to planet name 
@@ -141,16 +146,43 @@ def lambda_handler(event, context):
     
     # Tx
     tx = Transaction(hash)
+    
+    # set fee payer
+    tx.fee_payer = manager_kp.pubkey()
+    
+    
+    # Add CU limit
+    cu_limit = set_compute_unit_limit(3400)
+    tx.add(cu_limit)
+    
+    
+    #add Priority fee
+    priority_fee = set_compute_unit_price(9000)
+    tx.add(priority_fee)
+    
+    
+    # Add transaction
     tx.add(ix)
+
+    
     logger.info("Built anchor instruction for transaction") 
     logger.info("Submitting transaction") 
+    
     
     #manager signed transaction
     signed_tx = manager_anchor_wallet.sign_transaction(tx)
     logger.info("Manager signed transaction successfully") 
     
+    if not tx.verify_signatures():
+        response_body['message'].append("Transaction signature verification failed!")
+        return {
+            'statusCode': 200,
+            'body': response_body
+        }
+    
+    
     # Submit transaction
-    signature = loop.run_until_complete(submit_withdraw(async_client,manager_anchor_wallet,signed_tx,acc))
+    signature = loop.run_until_complete(submit_withdraw(async_client,manager_anchor_wallet,tx))
     logger.info("Transaction completed") 
     if signature and type(signature) is dict:
         logger.error('ERROR Processing solana transaction')
@@ -161,9 +193,12 @@ def lambda_handler(event, context):
             'body': response_body
         }
         
+        
+    ### This is the end of first half
+        
     logger.info(f"Signature: {signature}")
     
-    loop.run_until_complete(listen_transaction(signature))
+    return_from_listen = loop.run_until_complete(listen_transaction(signature))
     logger.info("Listen returned!")
 
     # --------------------------------- #
@@ -182,7 +217,7 @@ def lambda_handler(event, context):
     # RETURN SUCCESS! 
     return {
         'statusCode' : 200,
-        'body': json.dumps({'status': 'success', 'message' : 'All deposit data deleted successfully' })
+        'body': {'status': 'success', 'message' : 'All deposit data deleted successfully', 'signature': str(signature)  }
     }
     
     
@@ -211,9 +246,9 @@ def get_deposit(wallet):
     
 
 # Submit withdraw transaction (Payer is Manager)
-async def submit_withdraw(async_client,manager_anchor_wallet,tx,acc):
+async def submit_withdraw(async_client,manager_anchor_wallet,tx):
     provider = Provider(async_client,manager_anchor_wallet)
-    sig = await provider.send(tx,TxOpts(preflight_commitment=Confirmed))
+    sig = await provider.send(tx,TxOpts(skip_confirmation=True,preflight_commitment=Confirmed))
     return sig
     
     
@@ -238,10 +273,10 @@ def delete_deposit(wallet):
             return True
             
 async def listen_transaction(signature):
-    async with connect("wss://api.devnet.solana.com") as websocket:
+    async with connect(wss_url) as websocket:
         #finalized is about 16 seconds
         #confirmed is about 6 seconds
-        await websocket.signature_subscribe(signature,"finalized")
+        await websocket.signature_subscribe(signature,"confirmed")
         logger.info("Subscribed to the signature")
         first_resp = await websocket.recv()
         subscription_id = first_resp[0].result

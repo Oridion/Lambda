@@ -19,9 +19,11 @@ from solana.rpc.websocket_api import connect
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from solders.signature import Signature
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
 from anchor.accounts import Universe
-from anchor.instructions import star_hop_two_start
-from anchor.instructions import star_hop_two_end
+from anchor.instructions import star_hop_three_start
+from anchor.instructions import star_hop_three_end
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -34,9 +36,11 @@ universe_pda = Pubkey.from_string(os.environ['UNIVERSE_ADDRESS'])
 oridion_program_id = Pubkey.from_string(os.environ['ORD_PROGRAM_ADDRESS'])
 
 #Set Client and async client (devnet_env or mainnet_env)
-http_client = Client(os.environ['DEVNET_ENV'])
-async_client = AsyncClient(os.environ['DEVNET_ENV'])
+http_client = Client(os.environ['MAINNET_ENV'])
+async_client = AsyncClient(os.environ['MAINNET_ENV'])
 
+#WSS URL
+wss_url = os.environ['WSS_URL']
 
 # Pass wallet, hop transaction, to planet name 
 def lambda_handler(event, context):
@@ -178,7 +182,7 @@ def lambda_handler(event, context):
     logger.info("Starting hop anchor transaction") 
   
     # Star hop start Instruction
-    ix1 = star_hop_two_start(
+    ix1 = star_hop_three_start(
         {
             "star_one": star_one_id,
             "star_two": star_two_id,
@@ -195,7 +199,10 @@ def lambda_handler(event, context):
     )
     
     # Star hop end Instruction
-    ix2 = star_hop_two_end(
+    ix2 = star_hop_three_end(
+        {
+            "deposit": int(deposit_lamports)
+        },
         {
             "to_planet": to_planet_pda,
             "star_one": s1_planet_pda,
@@ -212,13 +219,31 @@ def lambda_handler(event, context):
     
     # logger.info(str(hash_one))
     
+    #set up compute unit price 
+    cu_limit_one = set_compute_unit_limit(45000)
+    cu_limit_two = set_compute_unit_limit(8000)
+
+    #set up Priority fee
+    priority_fee = set_compute_unit_price(10000)
+    
     # TX One 
     tx1 = Transaction(hash_one)
+    
+    # set fee payer
+    tx1.fee_payer = manager_kp.pubkey()
+    
+    # Set compute unit price 
+    tx1.add(cu_limit_one)
+    
+    # Add Priority fee
+    tx1.add(priority_fee)
+    
+    # Add instruction
     tx1.add(ix1)
     logger.info("Built step one anchor instruction for transaction") 
     logger.info("Submitting hop start transaction") 
     
-    #manager signed transaction
+    # Manager signed transaction
     signed_tx1 = manager_anchor_wallet.sign_transaction(tx1)
     logger.info("Manager signed first transaction successfully") 
     
@@ -250,7 +275,19 @@ def lambda_handler(event, context):
         
     # TX Two
     tx2 = Transaction(hash_two)
+    
+    # Set fee payer
+    tx2.fee_payer = manager_kp.pubkey()
+    
+    # Add cu limit 
+    tx2.add(cu_limit_two)
+    
+    # Add Priority fee
+    tx2.add(priority_fee)
+    
+    # Add instruction
     tx2.add(ix2)
+    
     logger.info("Built step two anchor instruction for transaction") 
     logger.info("Submitting hop end transaction") 
     
@@ -390,7 +427,7 @@ def id_generator(size=8, chars=string.ascii_uppercase + string.digits):
 
 
 async def listen_transaction(signature):
-    async with connect("wss://api.devnet.solana.com") as websocket:
+    async with connect(wss_url) as websocket:
         #finalized is about 16 seconds
         #confirmed is about 6 seconds
         await websocket.signature_subscribe(signature,"confirmed")

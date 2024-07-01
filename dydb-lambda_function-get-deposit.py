@@ -1,3 +1,4 @@
+import json
 import logging
 import boto3
 import botocore
@@ -13,35 +14,36 @@ db = dynamodb.Table("deposits")
 
 # Post variable should be wallet
 def lambda_handler(event, context):
-
-    print(db.table_status)
-
+    
+    #print(db.table_status)
+    
     # default error messages array and valid marker
     valid = True
-
+    
     # Response body
     response_body = {
         'status': 'error',
         'message': []
-    }
-
+    }         
+            
     # validate post data
     if 'wallet' not in event:
         response_body['message'].append("Wallet key not found")
         valid = False
 
     if not valid:
+        # print(json.dumps(response_body))
         return {
             'statusCode': 200,
             'body': response_body
         }
     # end validate post variables
-
+    
 
     # POST variables
     user_public_key = event['wallet']
     logger.info("Requested deposit data for wallet: " + user_public_key)
-
+    
     # Set user pubkey
     user_pk = Pubkey.from_string(user_public_key)
     if not user_pk.is_on_curve:
@@ -50,30 +52,29 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': response_body
         }
-    logger.info("User wallet address valid")
+    logger.info("User wallet address valid")   
     #-------------------------------------------------------------------#
     # Validations complete
     #-------------------------------------------------------------------#
-
+    
     # --------------------------------- #
     # DYNAMO DB Connection
-    logger.info("Connecting to Dynamodb...")
+    logger.info("Connecting to Dynamodb for: " + user_public_key)
     result = get_deposit(user_public_key)
-    logger.info("Returned item from DB")
-    # --------------------------------- #
-    logger.info("Done")
+    # --------------------------------- # 
+    logger.info("Done") 
 
-
-    # RETURN SUCCESS!
+    
+    # RETURN SUCCESS! 
     return {
         'statusCode' : 200,
         'body': {'status': 'success', 'deposit' : result }
     }
-
-
+    
+    
 def get_deposit(wallet):
         """
-        Gets deposit data from table
+        Gets deposit data from table 
 
         :param wallet: Wallet string of user.
         :return: The deposit data row
@@ -88,4 +89,11 @@ def get_deposit(wallet):
             )
             raise
         else:
-            return response["Item"]
+
+            if "Item" in response:
+                logger.info("Wallet data found in table")
+                return response["Item"]
+            else:
+                logger.info("Wallet was not found in table")
+                logger.info(response)
+                return "none"
